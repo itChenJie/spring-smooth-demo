@@ -6,6 +6,7 @@
 
     spring-boot-starter-parent:2.2.2.RELEASE,spring-cloud-loadbalancer 模块刚刚取代 Ribbon；
     还 没有提供完整的 Retry 配置支持；当时重试逻辑仍依赖 Spring Retry + Feign 的 Retryer 机制 或 Ribbon 的老逻辑；
+    如果采用RestTemplate可以直接使用Spring Retry 来包裹重试逻辑
 ## OpenFeign
 ### 自动重试
     分两层
