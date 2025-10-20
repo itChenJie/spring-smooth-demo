@@ -12,4 +12,10 @@ feign:
         connectTimeout: 5000
         readTimeout: 5000
         retryer: com.fast.smooth.openfeign.config.CustomFeignRetryer
-        
+
+ribbon:
+  MaxAutoRetries: 1                   # 同实例重试次数
+  MaxAutoRetriesNextServer: 2         # 其他实例重试次数
+  OkToRetryOnAllOperations: true
+  ConnectTimeout: 2000
+  ReadTimeout: 2000
