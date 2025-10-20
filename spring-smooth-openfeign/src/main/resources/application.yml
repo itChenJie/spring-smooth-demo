@@ -1,0 +1,15 @@
+spring:
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: true
+
+## Feign 的 Retryer 实现重试
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+        retryer: com.fast.smooth.openfeign.config.CustomFeignRetryer
+        
