@@ -14,7 +14,7 @@
 
             ribbon:
             MaxAutoRetries: 1                   # 同实例重试次数
-            MaxAutoRetriesNextServer: 2         # 其他实例重试次数
+            MaxAutoRet  riesNextServer: 2         # 其他实例重试次数
             OkToRetryOnAllOperations: true
             ConnectTimeout: 2000
             ReadTimeout: 2000

@@ -1,21 +1,41 @@
+server:
+  port: 8080
 spring:
+  application:
+    name: spring-smooth-openfeign
   cloud:
     loadbalancer:
       retry:
-        enabled: true
+        enabled: true  # 启用重试机制
 
-## Feign 的 Retryer 实现重试
 feign:
+  okhttp:
+    enabled: true        # ✅ 启用 OkHttp（可选）
+  httpclient:
+    enabled: false       # ✅ 禁用默认 HttpClient
   client:
     config:
       default:
-        connectTimeout: 5000
-        readTimeout: 5000
-        retryer: com.fast.smooth.openfeign.config.CustomFeignRetryer
+        connectTimeout: 2000   # 毫秒
+        readTimeout: 5000      # 毫秒
+        loggerLevel: full      # 打印详细日志（方便调试）
 
-ribbon:
-  MaxAutoRetries: 1                   # 同实例重试次数
-  MaxAutoRetriesNextServer: 2         # 其他实例重试次数
-  OkToRetryOnAllOperations: true
-  ConnectTimeout: 2000
-  ReadTimeout: 2000
+
+
+eureka:
+  instance:
+    metadata-map:
+      version: @project.version@
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+    registryFetchIntervalSeconds: 5
+    fetch-registry: true
+    service-url:
+      defaultZone: http://192.168.1.70:9701/eureka
+
+
+logging:
+  level:
+    com.netflix.loadbalancer: DEBUG
+    org.springframework.cloud.netflix.eureka: DEBUG
