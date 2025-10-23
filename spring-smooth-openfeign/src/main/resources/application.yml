@@ -5,9 +5,23 @@ spring:
     name: spring-smooth-openfeign
   cloud:
     loadbalancer:
+      enabled: true
       retry:
-        enabled: true  # 启用重试机制
-
+        # 该参数用来开启或关闭重试机制，默认是开启
+        enabled: true
+        # 对当前实例重试的次数，默认值: 0
+        max-retries-on-same-service-instance: 1
+        # 切换实例进行重试的次数，默认值: 1
+        max-retries-on-next-service-instance: 1
+        # 对所有的操作请求都进行重试
+        retry-on-all-operations: true
+      health-check:
+        refetch-instances: true
+        refetch-instances-interval: 5s
+        repeat-health-check: false
+#    circuitbreaker:
+#      hystrix:
+#        enabled: true
 feign:
   okhttp:
     enabled: true        # ✅ 启用 OkHttp（可选）
@@ -18,7 +32,7 @@ feign:
       default:
         connectTimeout: 2000   # 毫秒
         readTimeout: 5000      # 毫秒
-        loggerLevel: full      # 打印详细日志（方便调试）
+        loggerLevel: BASIC      # 打印详细日志（方便调试）
 
 
 
@@ -39,3 +53,6 @@ logging:
   level:
     com.netflix.loadbalancer: DEBUG
     org.springframework.cloud.netflix.eureka: DEBUG
+    org.springframework.cloud.loadbalancer: DEBUG
+    feign.Logger: DEBUG
+    org.springframework.web: DEBUG
