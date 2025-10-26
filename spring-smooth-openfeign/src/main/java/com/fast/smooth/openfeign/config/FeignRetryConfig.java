@@ -10,6 +10,6 @@ public class FeignRetryConfig {
     @Bean
     public Retryer feignRetryer() {
         // 参数: 初始间隔时间(ms), 最大间隔时间(ms), 最大重试次数
-        return new Retryer.Default(100, 1000, 3);
+        return new Retryer.Default(100, 1000, 1);
     }
 }

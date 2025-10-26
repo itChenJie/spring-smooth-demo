@@ -3,67 +3,53 @@
         1：网关请求失败，大量报错信息响应给前端
         2：服务间调用失败
     目标 减小服务发布影响时间
-## OpenFeign
-### 自动重试
-   分两层
-   - 客户端重试（Feign / LoadBalancer 的重试策略：先在同实例重试，再换实例重试）   
-     spring-boot-starter-parent:2.2.2.RELEASE，spring-cloud-loadbalancer 模块刚刚取代 Ribbon；   
-     还没有提供完整的 Retry 配置支持使用Ribbon    
-     - 方案 1：Ribbon（老机制）——自动换实例（Hoxton 默认仍支持）   
-         Ribbon 自身带有重试逻辑：
+## 服务接口高可用
+### OpenFeign 自动重试
+   - 客户端负载均衡层
+        <!-- LoadBalancer 重试 -->
+        - 重试目标：针对整个服务实例调用（实例维度）  
+        - 典型重试场景：当前实例调用失败 → 切换到另一个实例重试
+        - 默认是否开启：默认开启
+        - 可重试操作：可通过 retry-on-all-operations 控制（默认仅 GET）
+        - 适合场景：微服务级高可用，节点故障自动切换
+     
 
-            ribbon:
-            MaxAutoRetries: 1                   # 同实例重试次数
-            MaxAutoRet  riesNextServer: 2         # 其他实例重试次数
-            OkToRetryOnAllOperations: true
-            ConnectTimeout: 2000
-            ReadTimeout: 2000
-
-         📘解释：   
-           第一次失败 → 同实例重试一次；   
-           第二次失败 → Ribbon 自动切换到其他实例；   
-           整体可以实现“重试 + 自动换实例”。   
-
-     - 方案 2：完全使用 LoadBalancer（无 Ribbon）   
-        Spring Cloud LoadBalancer（Hoxton 版本），默认没有自动换实例功能。  
-        可以通过 自定义 Feign 的 Client 实现，让每次重试都重新调用 LoadBalancerClient.choose()。  
-
-            public class RetryableLoadBalancerFeignClient extends LoadBalancerFeignClient {
-                private final LoadBalancerClient loadBalancerClient;
-                public RetryableLoadBalancerFeignClient(Client delegate, LoadBalancerClient loadBalancerClient) {
-                    super(delegate, loadBalancerClient, new LoadBalancerClientFactory());
-                    this.loadBalancerClient = loadBalancerClient;
-                }
-                @Override
-                public Response execute(Request request, Request.Options options) throws IOException {
-                    int maxAttempts = 3;
-                    for (int i = 0; i < maxAttempts; i++) {
-                       ServiceInstance instance = loadBalancerClient.choose(getServiceId(request));
-                       if (instance == null) throw new IOException("No available instance");
-                       try {
-                            return super.execute(rebuildRequest(request, instance), options);
-                       } catch (IOException e) {
-                            if (i == maxAttempts - 1) throw e;
-                       }
-                    }
-                    throw new IOException("All retries failed");
-                }
-                private String getServiceId(Request request) {
-                    URI uri = URI.create(request.url());
-                    return uri.getHost();
-                }
-                private Request rebuildRequest(Request original, ServiceInstance instance) {
-                    String newUrl = instance.getUri().toString() + original.url().substring(original.url().indexOf('/', 8));
-                    return Request.create(original.httpMethod(), newUrl, original.headers(), original.body(), original.charset());
-                }
-            }
-| 方案                                                        | 是否会换实例   | 控制重试层级         | 配置方式                                | 适合场景       |
-| --------------------------------------------------------- | -------- | -------------- | ----------------------------------- | ---------- |
-| **Ribbon Retry**（Hoxton 默认）                               | ✅ 会自动换实例 | Ribbon 层       | `ribbon.*` 配置                       | 推荐旧项目      |
-| **Spring Cloud LoadBalancer + Retry**（Spring Cloud 2020+） | ✅ 支持     | LoadBalancer 层 | `spring.cloud.loadbalancer.retry.*` | 推荐新项目      |
-| **自定义 LoadBalancerFeignClient**                           | ✅ 可控     | 自定义封装          | Java 配置                             | 对接多注册中心、自研 |
-
-   - 业务/熔断重试（Resilience4j 的 Retry/CircuitBreaker，用于控制整体调用幅度）  
+            <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-loadbalancer</artifactId>
+            </dependency>
+            
+            spring:
+                application:
+                    cloud:
+                        loadbalancer:
+                            enabled: true
+                            retry:
+                                # 该参数用来开启或关闭重试机制，默认是开启
+                                enabled: true
+                                # 对当前实例重试的次数，默认值: 0
+                                max-retries-on-same-service-instance: 1
+                                # 切换实例进行重试的次数，默认值: 1
+                                max-retries-on-next-service-instance: 1
+                                # 对所有的操作请求都进行重试
+                                retry-on-all-operations: true
+                            health-check:
+                                # 是否重新获取服务实例列表，默认为false
+                                refetch-instances: true
+                                # 重新获取服务实例列表的时间间隔，默认为5秒
+                                refetch-instances-interval: 5s
+                                # 是否重复进行健康检查，默认为false
+                                repeat-health-check: false
+   - Feign 调用层（HTTP 层）
+        - 重试目标：针对单个 HTTP 请求（同一实例）
+        - 典型重试场景：网络抖动、Socket 超时、服务端返回特定异常
+        - 控制的粒度：请求级（默认同一实例）
+        - 默认是否开启：❌ 关闭，需要显式配置 Retryer Bean
+        - 可重试操作：任意 HTTP 操作，只要异常触发
+        - 适合场景：临时网络错误、短连接重试
+        - 生效前提：显式指定 configuration = FeignRetryConfig.class
+        
+        - 业务/熔断重试（Resilience4j 的 Retry/CircuitBreaker，用于控制整体调用幅度）  
 ### 熔断
 ### 动态负载机制
     
