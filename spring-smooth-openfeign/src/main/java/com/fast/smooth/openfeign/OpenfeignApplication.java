@@ -15,5 +15,4 @@ public class OpenfeignApplication {
     public static void main(String[] args) {
         SpringApplication.run(OpenfeignApplication.class, args);
     }
-
 }

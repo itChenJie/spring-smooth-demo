@@ -3,7 +3,9 @@ package com.fast.smooth.openfeign.controller;
 import com.fast.smooth.openfeign.feign.OrderDemoFeign;
 import com.fast.smooth.openfeign.feign.vo.OrderListRequest;
 import com.fast.smooth.openfeign.feign.vo.OrderListResponse;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,6 +15,7 @@ public class OrderController {
     private OrderDemoFeign orderDemoFeign;
 
     @PostMapping("list")
+    @CircuitBreaker(name = "order", fallbackMethod = "fallbackList")
     public String list() {
         OrderListRequest request = new OrderListRequest();
         request.setToken("1222");
@@ -20,5 +23,9 @@ public class OrderController {
         System.out.println(orders.toString());
         System.out.println(orders.getCode());
         return "success";
+    }
+
+    public String fallbackList(Throwable e) {
+        throw new RuntimeException("order list 接口异常");
     }
 }

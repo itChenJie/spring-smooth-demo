@@ -49,7 +49,44 @@
         - 适合场景：临时网络错误、短连接重试
         - 生效前提：显式指定 configuration = FeignRetryConfig.class
         
-        - 业务/熔断重试（Resilience4j 的 Retry/CircuitBreaker，用于控制整体调用幅度）  
+   - 熔断 限流Resilience4j
+        - ✅ 熔断（Circuit Breaking）：当调用失败率过高时自动“断开电路”，阻止继续访问故障服务。
+        - 🔁 重试（Retry）：请求失败时可自动重试几次。
+        - ⏱️ 限流（Rate Limiter）：限制访问频率，防止过载。
+        - ⌛ 超时控制（Timeout）：防止调用时间过长。
+        - 🧯 回退（Fallback）：当发生异常时执行备用逻辑（如返回缓存或默认值）。
+
+
+          resilience4j:
+          circuitbreaker:
+          instances:
+          myService:
+          slidingWindowType: COUNT_BASED       # 滑动窗口类型：基于请求数
+          registerHealthIndicator: true
+          slidingWindowSize: 100         # 检测窗口大小（100次调用）
+          failureRateThreshold: 50       # 失败率超过50%则熔断
+          waitDurationInOpenState: 10s   # 熔断后等待10秒再半开
+          permittedNumberOfCallsInHalfOpenState: 10 # 半开状态允许请求数：10 个
+          automaticTransitionFromOpenToHalfOpenEnabled: true
+          recordExceptions: # 记为失败的异常
+          - java.io.IOException
+            - java.util.concurrent.TimeoutException
+            - org.springframework.web.client.HttpServerErrorException  # 5xx 错误
+            ignoreExceptions: # 不记为失败的异常（如客户端错误）
+            - org.springframework.web.client.HttpClientErrorException  # 4xx 错误
+            retry:
+            instances:
+            myService:
+            maxAttempts: 3 # 最大重试次数：3 次（不含首次调用）
+            waitDuration: 1s  # 重试间隔：1s
+            retryExceptions: # 需要重试的异常
+            - java.io.IOException
+            - java.util.concurrent.TimeoutException
+            timelimiter:
+            instances:
+            myService:
+            timeoutDuration: 2s  # 异步调用超时：5s
+   
 ### 熔断
 ### 动态负载机制
     

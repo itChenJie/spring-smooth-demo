@@ -34,7 +34,7 @@
             <artifactId>spring-cloud-loadbalancer</artifactId>
         </dependency>
 
-        <!-- 「熔断」或「降级」 -->
+        <!-- 「熔断」、「降级」、重试、限流、超时 -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>

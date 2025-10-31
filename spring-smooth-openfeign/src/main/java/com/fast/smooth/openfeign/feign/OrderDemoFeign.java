@@ -8,7 +8,8 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(name="sd-ins-order-service2222",contextId="order",configuration = FeignRetryConfig.class)
+@FeignClient(name="sd-ins-order-service2222",contextId="order",
+		configuration = FeignRetryConfig.class)
 public interface OrderDemoFeign {
 
 	@PostMapping("list")

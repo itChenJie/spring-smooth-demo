@@ -39,15 +39,56 @@ feign:
 
 
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      myService:
+        slidingWindowType: COUNT_BASED       # 滑动窗口类型：基于请求数
+        registerHealthIndicator: true
+        slidingWindowSize: 100         # 检测窗口大小（100次调用）
+        failureRateThreshold: 50       # 失败率超过50%则熔断
+        waitDurationInOpenState: 10s   # 熔断后等待10秒再半开
+        permittedNumberOfCallsInHalfOpenState: 10 # 半开状态允许请求数：10 个
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions: # 记为失败的异常
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - org.springframework.web.client.HttpServerErrorException  # 5xx 错误
+        ignoreExceptions: # 不记为失败的异常（如客户端错误）
+          - org.springframework.web.client.HttpClientErrorException  # 4xx 错误
+  retry:
+    instances:
+      myService:
+        maxAttempts: 3 # 最大重试次数：3 次（不含首次调用）
+        waitDuration: 1s  # 重试间隔：1s
+        retryExceptions: # 需要重试的异常
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+  timelimiter:
+    instances:
+      myService:
+        timeoutDuration: 2s  # 异步调用超时：5s
+
+
 eureka:
   instance:
-    metadata-map:
-      version: @project.version@
+    # 心跳间隔（秒）
+    lease-renewal-interval-in-seconds: 10
+    # 心跳超时时间（秒）
+    lease-expiration-duration-in-seconds: 16
+#    metadata-map:
+#      version: @project.version@
     prefer-ip-address: true
+    initial-status: STARTING
+    # 移除 initial-status 配置，让Eureka自动管理状态
+    health-check-url-path: /actuator/health  # 确保健康检查端点正确
+    status-page-url-path: /actuator/info     # 状态页面
   client:
     register-with-eureka: true
     registryFetchIntervalSeconds: 5
     fetch-registry: true
+    healthcheck:
+      enabled: true  # 启用健康检查
     service-url:
       defaultZone: http://192.168.1.70:9701/eureka
 
@@ -59,3 +100,13 @@ logging:
     org.springframework.cloud.loadbalancer: DEBUG
     feign.Logger: DEBUG
     org.springframework.web: DEBUG
+
+# 启用Actuator端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
